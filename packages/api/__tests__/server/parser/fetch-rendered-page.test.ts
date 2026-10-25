@@ -17,7 +17,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SiteAuthTokenDecryptedDto } from "@norish/shared/contracts/dto/site-auth-tokens";
-import { fetchRenderedPage } from "@norish/api/parser/fetch";
+import { fetchRenderedPage, fetchRenderedPageDetailed } from "@norish/api/parser/fetch";
 
 const { mockGetBrowser, mockNewContext, mockNewPage, mockGoto, mockContent, mockClose } =
   vi.hoisted(() => {
@@ -159,6 +159,15 @@ describe("fetchRenderedPage – rendered-page contract", () => {
 
     await expect(fetchRenderedPage("https://example.com/recipe")).resolves.toBe("");
     expect(mockNewContext).not.toHaveBeenCalled();
+  });
+
+  it("reports why no HTML came back", async () => {
+    mockGetBrowser.mockRejectedValue(new Error("Obscura is not reachable at ws://obscura:9222."));
+
+    await expect(fetchRenderedPageDetailed("https://example.com/recipe")).resolves.toEqual({
+      html: "",
+      failure: "Obscura is not reachable at ws://obscura:9222.",
+    });
   });
 
   it("survives a context that fails to close", async () => {

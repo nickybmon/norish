@@ -68,6 +68,25 @@ export async function fetchRenderedPage(
   tokens?: SiteAuthTokenDecryptedDto[],
   isSettled?: (html: string) => boolean
 ): Promise<string> {
+  return (await fetchRenderedPageDetailed(targetUrl, tokens, isSettled)).html;
+}
+
+export interface RenderedPage {
+  html: string;
+  /** Why `html` is empty: the message of whatever stopped Obscura. Absent when HTML came back. */
+  failure?: string;
+}
+
+/**
+ * `fetchRenderedPage`, plus the reason when it comes back empty. An empty page
+ * has several causes (Obscura down, a navigation timeout, a dropped connection)
+ * that the import has to tell apart for the person reading the error.
+ */
+export async function fetchRenderedPageDetailed(
+  targetUrl: string,
+  tokens?: SiteAuthTokenDecryptedDto[],
+  isSettled?: (html: string) => boolean
+): Promise<RenderedPage> {
   let context: BrowserContext | undefined;
 
   try {
@@ -113,13 +132,11 @@ export async function fetchRenderedPage(
       timeout: NAVIGATION_TIMEOUT_MS,
     });
 
-    if (!isSettled) return await page.content();
-
-    return await settledContent(page, isSettled);
+    return { html: isSettled ? await settledContent(page, isSettled) : await page.content() };
   } catch (error) {
     log.warn({ err: error, url: targetUrl }, "Obscura could not render the page");
 
-    return "";
+    return { html: "", failure: error instanceof Error ? error.message : String(error) };
   } finally {
     if (context) {
       await context.close().catch((err) => {

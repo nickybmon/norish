@@ -29,7 +29,11 @@ vi.mock("@norish/shared/lib/helpers", async (importOriginal) => ({
 }));
 
 vi.mock("@norish/api/parser/fetch", () => ({
-  fetchRenderedPage: mockFetchRenderedPage,
+  fetchRenderedPageDetailed: async (...args: unknown[]) => {
+    const result = await mockFetchRenderedPage(...args);
+
+    return typeof result === "string" ? { html: result } : result;
+  },
 }));
 
 vi.mock("@norish/api/parser/python/client", () => ({
@@ -237,6 +241,16 @@ describe("parseRecipeFromUrl import flow", () => {
 
     expect(result).toEqual({ recipe: aiRecipe, usedAI: true });
     expect(mockExtractRecipeWithAI).toHaveBeenCalled();
+  });
+
+  it("names why the page could not be fetched", async () => {
+    mockFetchRenderedPage.mockResolvedValue({ html: "", failure: "Obscura is not reachable" });
+
+    const { parseRecipeFromUrl } = await import("@norish/api/parser");
+
+    await expect(parseRecipeFromUrl("https://example.com/page", "recipe-1")).rejects.toThrow(
+      "Cannot fetch recipe page: Obscura is not reachable"
+    );
   });
 
   it("hard-fails when parser failure occurs and the page does not look recipe-like", async () => {

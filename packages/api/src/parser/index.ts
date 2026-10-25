@@ -1,5 +1,5 @@
 import type { SiteAuthTokenDecryptedDto } from "@norish/shared/contracts/dto/site-auth-tokens";
-import { fetchRenderedPage } from "@norish/api/parser/fetch";
+import { fetchRenderedPageDetailed } from "@norish/api/parser/fetch";
 import { extractRecipeNodesFromJsonLd } from "@norish/api/parser/jsonld";
 import { adaptRecipeScrapersResponse } from "@norish/api/parser/python/adapter";
 import { callRecipeScrapersParser } from "@norish/api/parser/python/client";
@@ -189,9 +189,11 @@ export async function parseRecipeFromUrl(
 
   if (videoResult) return videoResult;
 
-  const html = await fetchRenderedPage(url, tokens);
+  const { html, failure } = await fetchRenderedPageDetailed(url, tokens);
 
-  if (!html) throw new Error("Cannot fetch recipe page.");
+  if (!html) {
+    throw new Error(failure ? `Cannot fetch recipe page: ${failure}` : "Cannot fetch recipe page.");
+  }
 
   const useAIOnly = Boolean(forceAI || (await shouldAlwaysUseAI()));
 
