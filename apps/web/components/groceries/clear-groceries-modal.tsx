@@ -30,7 +30,9 @@ export function ClearGroceriesModal({
     <Modal.Backdrop isOpen={isOpen} onOpenChange={onClose}>
       <Modal.Container>
         <Modal.Dialog>
-          <Modal.Header>{scopeName === null ? t("listTitle") : t("sectionTitle", { name: scopeName })}</Modal.Header>
+          <Modal.Header>
+            {scopeName === null ? t("listTitle") : t("sectionTitle", { name: scopeName })}
+          </Modal.Header>
           <Modal.Body>
             <p className="text-muted text-base">
               {scopeName === null
