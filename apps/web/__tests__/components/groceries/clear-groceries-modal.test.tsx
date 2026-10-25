@@ -57,7 +57,7 @@ describe("ClearGroceriesModal", () => {
       />
     );
 
-    expect(screen.getByText("sectionTitle")).toBeInTheDocument();
+    expect(screen.getByText("sectionTitle Costco")).toBeInTheDocument();
     expect(screen.getByText("sectionDescription Costco 3")).toBeInTheDocument();
   });
 
