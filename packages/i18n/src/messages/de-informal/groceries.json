@@ -9,7 +9,10 @@
     "manageStores": "Geschäfte verwalten",
     "storeViewOptions": "Optionen Geschäftsansicht",
     "groupIngredients": "Zutaten gruppieren",
-    "clearList": "Liste leeren"
+    "clearList": "Liste leeren",
+    "pantry": "Vorratskammer",
+    "list": "Liste",
+    "views": "Einkaufsansichten"
   },
   "empty": {
     "title": "Deine Einkaufsliste wartet",
@@ -86,6 +89,27 @@
     "dragAisle": "Zum Sortieren ziehen",
     "aisleDuplicate": "Dieses Geschäft hat bereits einen Gang mit diesem Namen"
   },
+  "pantry": {
+    "hint": "Zutaten, die du schon zu Hause hast.",
+    "empty": "Noch nichts in deiner Vorratskammer",
+    "unavailable": "Deine Vorratskammer konnte nicht gelesen werden. Es hat sich nichts geändert; versuch es erneut, wenn du wieder online bist.",
+    "fieldLabel": "Lebensmittel suchen oder hinzufügen",
+    "fieldPlaceholder": "Suchen oder hinzufügen, z. B. Olivenöl",
+    "add": "Zur Vorratskammer hinzufügen",
+    "fromCatalogue": "Lebensmittel hinzufügen",
+    "addFood": "{name} zur Vorratskammer hinzufügen",
+    "putOnTheList": "Zur Einkaufsliste hinzufügen",
+    "onTheList": "Auf der Liste",
+    "putOnTheListToast": "{name} steht auf der Liste",
+    "undo": "Rückgängig",
+    "keepFailed": "{name} konnte nicht zur Vorratskammer hinzugefügt werden",
+    "fromYourRecipes": "Aus deinen Rezepten",
+    "fromYourRecipesHint": "Meistverwendete Zutaten",
+    "inRecipes": "{count, plural, one {in # Rezept} other {in # Rezepten}}",
+    "showMore": "Mehr anzeigen",
+    "inYourPantry": "In deiner Vorratskammer",
+    "offlineDetails": "Die Details eines Lebensmittels öffnen sich, sobald du wieder online bist."
+  },
   "panel": {
     "addTitle": "Einkauf hinzufügen",
     "editTitle": "Einkauf bearbeiten",
@@ -116,6 +140,7 @@
     "editPlaceholder": "z.B. Milch jede Woche",
     "servings": "Portionen",
     "selectedCount": "{selected} von {total} ausgewählt",
+    "pantryUnavailable": "Deine Vorratskammer konnte nicht gelesen werden, daher ist noch nichts angehakt. Hake an, was du kaufen musst.",
     "loadingIngredients": "Zutaten werden geladen...",
     "noIngredients": "Keine Zutaten.",
     "addSelectedToGroceries": "Zur Einkaufsliste hinzufügen",
@@ -123,7 +148,11 @@
     "ingredientsFailed": "Fehler beim Hinzufügen der Zutaten zur Einkaufsliste.",
     "addToGroceries": "Zur Einkaufsliste hinzufügen",
     "aisle": "Gang",
-    "noAisle": "Kein Gang"
+    "noAisle": "Kein Gang",
+    "toBuy": "Einzukaufen",
+    "inPantry": "In deiner Vorratskammer",
+    "weKeepThis": "Haben wir immer",
+    "keepFailed": "Das konnte nicht zur Vorratskammer hinzugefügt werden"
   },
   "picker": {
     "unlink": "Produkt entkoppeln",

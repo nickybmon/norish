@@ -20,11 +20,15 @@ import { useTranslations } from "next-intl";
 
 import type { GroceryDto } from "@norish/shared/contracts";
 import type { RecurrencePattern } from "@norish/shared/contracts/recurrence";
-import { cssFloatingDockContentClearance } from "@norish/web/config/css-tokens";
+import {
+  cssFloatingDockContentClearance,
+  cssHeaderControl,
+  cssHeaderIcon,
+  cssHeaderIconControl,
+} from "@norish/web/config/css-tokens";
 
 import { useGroceriesContext, useGroceriesUiContext } from "../context";
 import { useStoresContext } from "../stores-context";
-import AddGroceryButton from "./add-grocery-button";
 
 export function GroceriesPage() {
   const {
@@ -52,36 +56,20 @@ export function GroceriesPage() {
     editingGrocery,
     setEditingGrocery,
     viewMode,
-    setViewMode,
     groupSimilarIngredients,
-    setGroupSimilarIngredients,
   } = useGroceriesUiContext();
-  const t = useTranslations("groceries.page");
 
   type ClearScope =
-    | { kind: "all" }
     | { kind: "store"; storeId: string | null; name: string }
     | { kind: "recipe"; ids: string[]; name: string };
   const [clearScope, setClearScope] = useState<ClearScope | null>(null);
+  const clearIds =
+    clearScope?.kind === "store"
+      ? groceries.filter((g) => g.storeId === clearScope.storeId).map((g) => g.id)
+      : (clearScope?.ids ?? []);
   const handleClearConfirm = () => {
-    if (!clearScope) return;
-    if (clearScope.kind === "all") {
-      deleteGroceries(groceries.map((g) => g.id));
-    } else if (clearScope.kind === "store") {
-      deleteGroceries(groceries.filter((g) => g.storeId === clearScope.storeId).map((g) => g.id));
-    } else {
-      deleteGroceries(clearScope.ids);
-    }
+    if (clearIds.length > 0) deleteGroceries(clearIds);
   };
-  const clearItemCount =
-    clearScope?.kind === "all"
-      ? groceries.length
-      : clearScope?.kind === "store"
-        ? groceries.filter((g) => g.storeId === clearScope.storeId).length
-        : (clearScope?.ids.length ?? 0);
-  const clearScopeName =
-    clearScope?.kind === "store" || clearScope?.kind === "recipe" ? clearScope.name : null;
-
   const handleToggle = (id: string, isDone: boolean) => {
     toggleGroceries([id], isDone);
   };
@@ -163,101 +151,6 @@ export function GroceriesPage() {
         data-grocery-grouping={groceryGrouping}
         data-grocery-view={viewMode}
       >
-        {/* Header */}
-        <div className="mb-6 flex min-h-10 shrink-0 items-center justify-between">
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
-          <div className="flex items-center gap-2">
-            {/* Desktop add button: Full text with icon */}
-            <Button
-              className="hidden rounded-full font-medium md:flex"
-              size="md"
-              variant="primary"
-              onPress={() => setAddGroceryPanelOpen(true)}
-            >
-              {<PlusIcon className="h-5 w-5" />}
-              {t("addItem")}
-            </Button>
-            {/* Settings dropdown with view mode and store management */}
-            <Dropdown>
-              <Button isIconOnly aria-label={t("viewMode")} size="sm" variant="tertiary">
-                <Cog6ToothIcon className="h-5 w-5" />
-              </Button>
-              <Dropdown.Popover className="bg-overlay">
-                <Dropdown.Menu aria-label={t("viewMode")}>
-                  <Dropdown.Section>
-                    <Header>{t("viewMode")}</Header>
-                    <Dropdown.Item
-                      key="view-store"
-                      id="view-store"
-                      textValue={t("viewByStore")}
-                      onPress={() => setViewMode("store")}
-                    >
-                      {<BuildingStorefrontIcon className="h-4 w-4" />}
-                      <Label>{t("viewByStore")}</Label>
-                      {viewMode === "store" ? <CheckIcon className="text-accent h-4 w-4" /> : null}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      key="view-recipe"
-                      id="view-recipe"
-                      textValue={t("viewByRecipe")}
-                      onPress={() => setViewMode("recipe")}
-                    >
-                      {<BookOpenIcon className="h-4 w-4" />}
-                      <Label>{t("viewByRecipe")}</Label>
-                      {viewMode === "recipe" ? <CheckIcon className="text-accent h-4 w-4" /> : null}
-                    </Dropdown.Item>
-                  </Dropdown.Section>
-                  <Separator />
-                  <Dropdown.Section className={viewMode !== "store" ? "hidden" : undefined}>
-                    <Header>{t("storeViewOptions")}</Header>
-                    <Dropdown.Item
-                      key="group-similar"
-                      id="group-similar"
-                      textValue={t("groupIngredients")}
-                      onPress={() => setGroupSimilarIngredients(!groupSimilarIngredients)}
-                    >
-                      <Label>{t("groupIngredients")}</Label>
-                      {
-                        <UiSwitch
-                          aria-label={t("groupIngredients")}
-                          isSelected={groupSimilarIngredients}
-                          size="sm"
-                          onValueChange={setGroupSimilarIngredients}
-                        />
-                      }
-                    </Dropdown.Item>
-                  </Dropdown.Section>
-                  {viewMode === "store" ? <Separator /> : null}
-                  <Dropdown.Section>
-                    <Dropdown.Item
-                      key="manage-stores"
-                      id="manage-stores"
-                      textValue={t("manageStores")}
-                      onPress={() => setStoreManagerOpen(true)}
-                    >
-                      {<Cog6ToothIcon className="h-4 w-4" />}
-                      <Label>{t("manageStores")}</Label>
-                    </Dropdown.Item>
-                    {groceries.length > 0 && (
-                      <Dropdown.Item
-                        key="clear-list"
-                        className="text-danger"
-                        id="clear-list"
-                        textValue={t("clearList")}
-                        variant="danger"
-                        onPress={() => setClearScope({ kind: "all" })}
-                      >
-                        {<TrashIcon className="h-4 w-4" />}
-                        <Label>{t("clearList")}</Label>
-                      </Dropdown.Item>
-                    )}
-                  </Dropdown.Section>
-                </Dropdown.Menu>
-              </Dropdown.Popover>
-            </Dropdown>
-          </div>
-        </div>
-
         {/* Grocery list */}
         <div className="flex-1 overflow-y-auto">
           {viewMode === "store" ? (
@@ -300,9 +193,6 @@ export function GroceriesPage() {
           className="shrink-0 md:hidden"
           style={{ height: cssFloatingDockContentClearance }}
         />
-
-        {/* Mobile: Floating add button that syncs with nav auto-hide */}
-        <AddGroceryButton />
       </div>
 
       {/* Panels */}
@@ -334,10 +224,134 @@ export function GroceriesPage() {
 
       <ClearGroceriesModal
         isOpen={clearScope !== null}
-        itemCount={clearItemCount}
-        scopeName={clearScopeName}
+        itemCount={clearIds.length}
+        scopeName={clearScope?.name ?? null}
         onClose={() => setClearScope(null)}
         onConfirm={handleClearConfirm}
+      />
+    </>
+  );
+}
+
+/**
+ * The list view's own controls, on the right of the Groceries header: the
+ * desktop add button and the menu with the view mode, grouping and stores.
+ */
+export function GroceriesListActions() {
+  const { groceries, deleteGroceries } = useGroceriesContext();
+  const { setStoreManagerOpen } = useStoresContext();
+  const [clearListOpen, setClearListOpen] = useState(false);
+  const {
+    setAddGroceryPanelOpen,
+    viewMode,
+    setViewMode,
+    groupSimilarIngredients,
+    setGroupSimilarIngredients,
+  } = useGroceriesUiContext();
+  const t = useTranslations("groceries.page");
+
+  return (
+    <>
+      {/* Desktop add button: Full text with icon */}
+      <Button
+        className={`hidden rounded-full px-3 font-medium md:flex ${cssHeaderControl}`}
+        size="md"
+        variant="primary"
+        onPress={() => setAddGroceryPanelOpen(true)}
+      >
+        {<PlusIcon className={cssHeaderIcon} />}
+        {t("addItem")}
+      </Button>
+      {/* Settings dropdown with view mode and store management */}
+      <Dropdown>
+        <Button
+          isIconOnly
+          aria-label={t("viewMode")}
+          className={cssHeaderIconControl}
+          size="md"
+          variant="tertiary"
+        >
+          <Cog6ToothIcon className={cssHeaderIcon} />
+        </Button>
+        <Dropdown.Popover className="bg-overlay">
+          <Dropdown.Menu aria-label={t("viewMode")}>
+            <Dropdown.Section>
+              <Header>{t("viewMode")}</Header>
+              <Dropdown.Item
+                key="view-store"
+                id="view-store"
+                textValue={t("viewByStore")}
+                onPress={() => setViewMode("store")}
+              >
+                {<BuildingStorefrontIcon className="h-4 w-4" />}
+                <Label>{t("viewByStore")}</Label>
+                {viewMode === "store" ? <CheckIcon className="text-accent h-4 w-4" /> : null}
+              </Dropdown.Item>
+              <Dropdown.Item
+                key="view-recipe"
+                id="view-recipe"
+                textValue={t("viewByRecipe")}
+                onPress={() => setViewMode("recipe")}
+              >
+                {<BookOpenIcon className="h-4 w-4" />}
+                <Label>{t("viewByRecipe")}</Label>
+                {viewMode === "recipe" ? <CheckIcon className="text-accent h-4 w-4" /> : null}
+              </Dropdown.Item>
+            </Dropdown.Section>
+            <Separator />
+            <Dropdown.Section className={viewMode !== "store" ? "hidden" : undefined}>
+              <Header>{t("storeViewOptions")}</Header>
+              <Dropdown.Item
+                key="group-similar"
+                id="group-similar"
+                textValue={t("groupIngredients")}
+                onPress={() => setGroupSimilarIngredients(!groupSimilarIngredients)}
+              >
+                <Label>{t("groupIngredients")}</Label>
+                {
+                  <UiSwitch
+                    aria-label={t("groupIngredients")}
+                    isSelected={groupSimilarIngredients}
+                    size="sm"
+                    onValueChange={setGroupSimilarIngredients}
+                  />
+                }
+              </Dropdown.Item>
+            </Dropdown.Section>
+            {viewMode === "store" ? <Separator /> : null}
+            <Dropdown.Section>
+              <Dropdown.Item
+                key="manage-stores"
+                id="manage-stores"
+                textValue={t("manageStores")}
+                onPress={() => setStoreManagerOpen(true)}
+              >
+                {<Cog6ToothIcon className="h-4 w-4" />}
+                <Label>{t("manageStores")}</Label>
+              </Dropdown.Item>
+              {groceries.length > 0 && (
+                <Dropdown.Item
+                  key="clear-list"
+                  className="text-danger"
+                  id="clear-list"
+                  textValue={t("clearList")}
+                  variant="danger"
+                  onPress={() => setClearListOpen(true)}
+                >
+                  {<TrashIcon className="h-4 w-4" />}
+                  <Label>{t("clearList")}</Label>
+                </Dropdown.Item>
+              )}
+            </Dropdown.Section>
+          </Dropdown.Menu>
+        </Dropdown.Popover>
+      </Dropdown>
+      <ClearGroceriesModal
+        isOpen={clearListOpen}
+        itemCount={groceries.length}
+        scopeName={null}
+        onClose={() => setClearListOpen(false)}
+        onConfirm={() => deleteGroceries(groceries.map((g) => g.id))}
       />
     </>
   );

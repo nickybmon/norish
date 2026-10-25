@@ -38,8 +38,13 @@ vi.mock("@norish/shared-server/logger", () => {
   return { aiLogger: logger, serverLogger: logger, createLogger: () => logger };
 });
 
-const { generateStructured } = await import("@norish/shared-server/ai/runtime/runtime");
+const { estimateStructuredInputTokens, generateStructured } =
+  await import("@norish/shared-server/ai/runtime/runtime");
 const { AIProviderError } = await import("@norish/shared-server/ai/runtime/errors");
+const { createModelUseLedger, runWithModelUseLedger } =
+  await import("@norish/shared-server/ai/runtime/model-use-ledger");
+const { forgetKeyRejection, listKeyRejections } =
+  await import("@norish/shared-server/ai/runtime/key-rejections");
 
 interface CapturedRequest {
   body: Record<string, unknown>;
@@ -48,8 +53,10 @@ interface CapturedRequest {
 let captured: CapturedRequest[] = [];
 let replies: (() => { status: number; body: unknown })[] = [];
 
-/** The answer the model gives when it plays along. */
-function tagged(): { status: number; body: unknown } {
+/** The answer the model gives when it plays along, with the usage it reports. */
+function tagged(
+  usage: Record<string, number> = { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 }
+): { status: number; body: unknown } {
   return {
     status: 200,
     body: {
@@ -64,7 +71,7 @@ function tagged(): { status: number; body: unknown } {
           finish_reason: "stop",
         },
       ],
-      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      usage,
     },
   };
 }
@@ -91,7 +98,7 @@ const server = createServer((req, res) => {
     captured.push({ body: JSON.parse(Buffer.concat(chunks).toString() || "{}") });
 
     const next = replies.length > 1 ? replies.shift() : replies[0];
-    const { status, body } = (next ?? tagged)();
+    const { status, body } = (next ?? (() => tagged()))();
 
     res.statusCode = status;
     res.setHeader("content-type", "application/json");
@@ -137,7 +144,7 @@ function responseFormats(): unknown[] {
 
 beforeEach(() => {
   captured = [];
-  replies = [tagged];
+  replies = [() => tagged()];
   mockGetAIConfig.mockResolvedValue(aiConfig());
   mockGetPrompts.mockResolvedValue({});
 });
@@ -157,7 +164,7 @@ describe("an endpoint that serves structured output", () => {
 
 describe("an endpoint that cannot serve structured output", () => {
   it("is retried in plain JSON mode and the answer is used", async () => {
-    replies = [noEndpoints, tagged];
+    replies = [noEndpoints, () => tagged()];
 
     await expect(generate()).resolves.toEqual({ tags: ["Italian"] });
 
@@ -168,7 +175,7 @@ describe("an endpoint that cannot serve structured output", () => {
   });
 
   it("is told the shape it must answer in, which json_object mode does not carry", async () => {
-    replies = [noEndpoints, tagged];
+    replies = [noEndpoints, () => tagged()];
 
     await generate();
 
@@ -221,6 +228,152 @@ describe("a provider whose structured-output support is known", () => {
     // fallback is not offered to a provider whose capabilities are known.
     await generate().catch(() => null);
 
+    expect(captured).toHaveLength(0);
+  });
+});
+
+describe("the job's model ledger", () => {
+  const use = { provider: "generic-openai", model: "test-model" };
+
+  it("records the model that answered, and the one that refused", async () => {
+    const ledger = createModelUseLedger();
+
+    await runWithModelUseLedger(ledger, generate);
+
+    replies = [() => ({ status: 401, body: { error: { message: "invalid key" } } })];
+    await runWithModelUseLedger(ledger, () => generate().catch(() => undefined));
+
+    expect(ledger.uses).toEqual([
+      { ...use, outcome: "completed", tokens: 2 },
+      { ...use, outcome: "failed" },
+    ]);
+  });
+
+  it("records the tokens the provider reported, reasoning included", async () => {
+    const ledger = createModelUseLedger();
+
+    replies = [
+      () =>
+        tagged({
+          prompt_tokens: 748,
+          completion_tokens: 165,
+          total_tokens: 913,
+          completion_tokens_details: { reasoning_tokens: 120 },
+        } as Record<string, number>),
+    ];
+    await runWithModelUseLedger(ledger, generate);
+
+    expect(ledger.uses).toEqual([{ ...use, outcome: "completed", tokens: 913 }]);
+  });
+
+  it("records no tokens where the provider reported none", async () => {
+    const ledger = createModelUseLedger();
+
+    replies = [() => tagged({})];
+    await runWithModelUseLedger(ledger, generate);
+
+    expect(ledger.uses).toEqual([{ ...use, outcome: "completed" }]);
+  });
+
+  it("records one completed use when the plain-JSON retry is what answered", async () => {
+    const ledger = createModelUseLedger();
+
+    replies = [noEndpoints, () => tagged()];
+    await runWithModelUseLedger(ledger, generate);
+
+    expect(ledger.uses).toEqual([{ ...use, outcome: "completed", tokens: 2 }]);
+  });
+
+  it("records nothing for a configuration that sends no request", async () => {
+    const ledger = createModelUseLedger();
+
+    mockGetAIConfig.mockResolvedValue(aiConfig({ provider: "openai", apiKey: undefined }));
+    await runWithModelUseLedger(ledger, () =>
+      expect(generate()).rejects.toThrow(/API Key is required/)
+    );
+
+    expect(ledger.uses).toEqual([]);
+    expect(captured).toHaveLength(0);
+  });
+
+  it("records one failed use when both request shapes are refused", async () => {
+    const ledger = createModelUseLedger();
+
+    replies = [noEndpoints];
+    await runWithModelUseLedger(ledger, () => generate().catch(() => undefined));
+
+    expect(ledger.uses).toEqual([{ ...use, outcome: "failed" }]);
+  });
+});
+
+describe("a key the provider refuses", () => {
+  const refused = () => ({
+    status: 401,
+    body: { error: { message: "Incorrect API key provided" } },
+  });
+
+  beforeEach(() => forgetKeyRejection("ai_config"));
+
+  it("is remembered from the first refusal, which a later refusal does not move", async () => {
+    replies = [refused];
+    await generate().catch(() => undefined);
+    const [first] = listKeyRejections();
+
+    await generate().catch(() => undefined);
+
+    expect(first).toMatchObject({ block: "ai_config" });
+    expect(listKeyRejections()).toEqual([first]);
+  });
+
+  it("is forgotten once a request with it answers", async () => {
+    replies = [refused, () => tagged()];
+    await generate().catch(() => undefined);
+    await generate();
+
+    expect(listKeyRejections()).toEqual([]);
+  });
+
+  it("is not what any other failure is taken for", async () => {
+    replies = [noEndpoints];
+    await generate().catch(() => undefined);
+
+    expect(listKeyRejections()).toEqual([]);
+  });
+});
+
+describe("an estimate of a request", () => {
+  /** What one request under the auto-tagging prompt would send, with these sections. */
+  const estimate = async (sections: string[]) =>
+    (await estimateStructuredInputTokens({ prompt: "auto-tagging", schema, sections })).tokens;
+
+  it("names the model the request would go to", async () => {
+    await expect(
+      estimateStructuredInputTokens({ prompt: "auto-tagging", schema, sections: [] })
+    ).resolves.toMatchObject({ provider: "generic-openai", model: "test-model" });
+  });
+
+  it("counts the sections a feature appends, four characters a token", async () => {
+    const bare = await estimate([]);
+    const withRecipe = await estimate(["x".repeat(4000)]);
+
+    // The section, and the blank line it is joined by.
+    expect(withRecipe - bare).toBeGreaterThanOrEqual(1000);
+    expect(withRecipe - bare).toBeLessThanOrEqual(1001);
+  });
+
+  it("counts the prompt as the administrator left it, not the shipped one", async () => {
+    const shipped = await estimate([]);
+
+    mockGetPrompts.mockResolvedValue({ autoTagging: "Tag it." });
+
+    expect(await estimate([])).toBeLessThan(shipped);
+  });
+
+  it("counts the system message and the answer's schema too, and asks nothing", async () => {
+    mockGetPrompts.mockResolvedValue({ autoTagging: "" });
+
+    // An empty prompt still sends the system message and the schema.
+    expect(await estimate([])).toBeGreaterThan(20);
     expect(captured).toHaveLength(0);
   });
 });

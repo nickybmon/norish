@@ -9,7 +9,10 @@
     "manageStores": "Gestisci negozi",
     "storeViewOptions": "Opzioni vista negozio",
     "groupIngredients": "Raggruppa ingredienti",
-    "clearList": "Svuota lista"
+    "clearList": "Svuota lista",
+    "pantry": "Dispensa",
+    "list": "Lista",
+    "views": "Viste della spesa"
   },
   "empty": {
     "title": "La tua lista della spesa ti aspetta",
@@ -86,6 +89,27 @@
     "dragAisle": "Trascina per riordinare",
     "aisleDuplicate": "Questo negozio ha già una corsia con quel nome"
   },
+  "pantry": {
+    "hint": "Ingredienti che hai già.",
+    "empty": "Ancora niente nella dispensa",
+    "unavailable": "Impossibile leggere la dispensa. Non è cambiato nulla; riprova quando torni online.",
+    "fieldLabel": "Cerca o aggiungi un alimento",
+    "fieldPlaceholder": "Cerca o aggiungi, es. olio d'oliva",
+    "add": "Aggiungi alla dispensa",
+    "fromCatalogue": "Aggiungi un alimento",
+    "addFood": "Aggiungi {name} alla dispensa",
+    "putOnTheList": "Aggiungi alla spesa",
+    "onTheList": "In lista",
+    "putOnTheListToast": "{name} è in lista",
+    "undo": "Annulla",
+    "keepFailed": "Impossibile aggiungere {name} alla dispensa",
+    "fromYourRecipes": "Dalle tue ricette",
+    "fromYourRecipesHint": "Ingredienti più usati",
+    "inRecipes": "{count, plural, one {in # ricetta} other {in # ricette}}",
+    "showMore": "Mostra altri",
+    "inYourPantry": "Nella tua dispensa",
+    "offlineDetails": "I dettagli di un alimento si aprono quando torni online."
+  },
   "panel": {
     "addTitle": "Aggiungi articolo",
     "editTitle": "Modifica articolo",
@@ -116,6 +140,7 @@
     "editPlaceholder": "es. latte ogni settimana",
     "servings": "Porzioni",
     "selectedCount": "{selected} di {total} selezionati",
+    "pantryUnavailable": "Non è stato possibile leggere la dispensa, quindi non c'è ancora nulla di selezionato. Seleziona ciò che devi comprare.",
     "loadingIngredients": "Caricamento ingredienti...",
     "noIngredients": "Nessun ingrediente.",
     "addSelectedToGroceries": "Aggiungi alla spesa",
@@ -123,7 +148,11 @@
     "ingredientsFailed": "Aggiunta degli ingredienti alla lista della spesa non riuscita.",
     "addToGroceries": "Aggiungi alla spesa",
     "aisle": "Corsia",
-    "noAisle": "Nessuna corsia"
+    "noAisle": "Nessuna corsia",
+    "toBuy": "Da comprare",
+    "inPantry": "Nella tua dispensa",
+    "weKeepThis": "Lo abbiamo sempre",
+    "keepFailed": "Impossibile aggiungerlo alla dispensa"
   },
   "picker": {
     "unlink": "Scollega prodotto",

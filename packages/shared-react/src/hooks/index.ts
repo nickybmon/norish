@@ -22,3 +22,5 @@ export * from "./ratings/index";
 export * from "./recipe-detail/index";
 export * from "./recipes/index";
 export * from "./stores/index";
+export * from "./pantry/index";
+export * from "./ingredients/index";

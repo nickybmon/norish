@@ -2,16 +2,8 @@ import type { BrowserContext, Page } from "playwright-core";
 
 import type { SiteAuthTokenDecryptedDto } from "@norish/shared/contracts/dto/site-auth-tokens";
 import { getBrowser } from "@norish/api/obscura";
+import { SERVER_CONFIG } from "@norish/config/env-config-server";
 import { parserLogger as log } from "@norish/shared-server/logger";
-
-/**
- * The whole navigation budget. One deadline rather than a stack of them: the
- * page settling and the recipe-shaped selector races that used to sit under
- * this one are Obscura's job now, and the parser's. Waiting past the
- * navigation for a page to become itself has its own deadline below, because
- * only a caller can tell that it has not.
- */
-const NAVIGATION_TIMEOUT_MS = 30_000;
 
 /** How long a page that answered with something else is given to become itself. */
 const SETTLE_TIMEOUT_MS = 15_000;
@@ -48,6 +40,18 @@ async function settledContent(page: Page, isSettled: (html: string) => boolean):
   return html ?? "";
 }
 
+/** A rendered page and the HTTP status its document last arrived with. */
+export interface RenderedPage {
+  /** Empty when Obscura produced no usable HTML */
+  html: string;
+  /**
+   * The status of the main document's last navigation: a bot check that
+   * answers 403 and then hands over the real page reports the real page's.
+   * Null when no document response was seen.
+   */
+  status: number | null;
+}
+
 /**
  * Render a page in Obscura and return its HTML.
  *
@@ -68,7 +72,17 @@ export async function fetchRenderedPage(
   tokens?: SiteAuthTokenDecryptedDto[],
   isSettled?: (html: string) => boolean
 ): Promise<string> {
+  return (await renderPage(targetUrl, tokens, isSettled)).html;
+}
+
+/** `fetchRenderedPage`, keeping the status a site answered with, so a refusal can be named. */
+export async function renderPage(
+  targetUrl: string,
+  tokens?: SiteAuthTokenDecryptedDto[],
+  isSettled?: (html: string) => boolean
+): Promise<RenderedPage> {
   let context: BrowserContext | undefined;
+  let status: number | null = null;
 
   try {
     const browser = await getBrowser();
@@ -108,18 +122,30 @@ export async function fetchRenderedPage(
 
     const page = await context.newPage();
 
-    await page.goto(targetUrl, {
-      waitUntil: "load",
-      timeout: NAVIGATION_TIMEOUT_MS,
+    page.on("response", (response) => {
+      if (response.request().isNavigationRequest() && response.frame() === page.mainFrame()) {
+        status = response.status();
+      }
     });
 
-    if (!isSettled) return await page.content();
+    const response = await page.goto(targetUrl, {
+      waitUntil: "load",
+      // The whole navigation budget. One deadline rather than a stack of them:
+      // page settling is Obscura's job, and waiting past the navigation for a
+      // page to become itself has its own deadline, SETTLE_TIMEOUT_MS, because only a
+      // caller can tell that it has not.
+      timeout: SERVER_CONFIG.OBSCURA_NAVIGATION_TIMEOUT_MS,
+    });
 
-    return await settledContent(page, isSettled);
+    status ??= response?.status() ?? null;
+
+    const html = isSettled ? await settledContent(page, isSettled) : await page.content();
+
+    return { html, status };
   } catch (error) {
     log.warn({ err: error, url: targetUrl }, "Obscura could not render the page");
 
-    return "";
+    return { html: "", status };
   } finally {
     if (context) {
       await context.close().catch((err) => {

@@ -7,7 +7,9 @@ import { cookbooksRouter } from "./routers/cookbooks";
 import { favoritesRouter } from "./routers/favorites";
 import { groceriesRouter } from "./routers/groceries";
 import { householdsAppRouter } from "./routers/households";
+import { ingredientsRouter } from "./routers/ingredients";
 import { libraryRouter } from "./routers/library";
+import { pantryRouter } from "./routers/pantry";
 import { permissionsRouter } from "./routers/permissions";
 import { ratingsRouter } from "./routers/ratings";
 import { recipesRouter } from "./routers/recipes";
@@ -33,6 +35,8 @@ export const appRouter = router({
   favorites: favoritesRouter,
   ratings: ratingsRouter,
   stores: storesRouter,
+  pantry: pantryRouter,
+  ingredients: ingredientsRouter,
   siteAuthTokens: siteAuthTokensRouter,
 });
 

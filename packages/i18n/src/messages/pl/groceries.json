@@ -9,7 +9,10 @@
     "manageStores": "Zarządzaj sklepami",
     "storeViewOptions": "Opcje widoku sklepu",
     "groupIngredients": "Grupuj składniki",
-    "clearList": "Wyczyść listę"
+    "clearList": "Wyczyść listę",
+    "pantry": "Spiżarnia",
+    "list": "Lista",
+    "views": "Widoki zakupów"
   },
   "empty": {
     "title": "Twoja lista zakupów czeka",
@@ -86,6 +89,27 @@
     "dragAisle": "Przeciągnij, aby zmienić kolejność",
     "aisleDuplicate": "Ten sklep ma już alejkę o tej nazwie"
   },
+  "pantry": {
+    "hint": "Składniki, które już masz.",
+    "empty": "W spiżarni nie ma jeszcze niczego",
+    "unavailable": "Nie udało się odczytać spiżarni. Nic się nie zmieniło; spróbuj ponownie po powrocie do sieci.",
+    "fieldLabel": "Znajdź lub dodaj produkt",
+    "fieldPlaceholder": "Znajdź lub dodaj, np. oliwa z oliwek",
+    "add": "Dodaj do spiżarni",
+    "fromCatalogue": "Dodaj produkt",
+    "addFood": "Dodaj {name} do spiżarni",
+    "putOnTheList": "Dodaj do zakupów",
+    "onTheList": "Na liście",
+    "putOnTheListToast": "{name} jest na liście",
+    "undo": "Cofnij",
+    "keepFailed": "Nie udało się dodać {name} do spiżarni",
+    "fromYourRecipes": "Z Twoich przepisów",
+    "fromYourRecipesHint": "Najczęściej używane składniki",
+    "inRecipes": "{count, plural, one {w # przepisie} few {w # przepisach} many {w # przepisach} other {w # przepisu}}",
+    "showMore": "Pokaż więcej",
+    "inYourPantry": "W Twojej spiżarni",
+    "offlineDetails": "Szczegóły produktu otworzą się po powrocie do sieci."
+  },
   "panel": {
     "addTitle": "Dodaj zakup",
     "editTitle": "Edytuj zakup",
@@ -116,6 +140,7 @@
     "editPlaceholder": "np. mleko co tydzień",
     "servings": "Porcje",
     "selectedCount": "Zaznaczono {selected} z {total}",
+    "pantryUnavailable": "Nie udało się odczytać spiżarni, więc nic nie jest jeszcze zaznaczone. Zaznacz to, co musisz kupić.",
     "loadingIngredients": "Ładowanie składników...",
     "noIngredients": "Brak składników.",
     "addSelectedToGroceries": "Dodaj do zakupów",
@@ -123,7 +148,11 @@
     "ingredientsFailed": "Nie udało się dodać składników do listy zakupów.",
     "addToGroceries": "Dodaj do zakupów",
     "aisle": "Alejka",
-    "noAisle": "Bez alejki"
+    "noAisle": "Bez alejki",
+    "toBuy": "Do kupienia",
+    "inPantry": "W Twojej spiżarni",
+    "weKeepThis": "Zawsze to mamy",
+    "keepFailed": "Nie udało się dodać do spiżarni"
   },
   "picker": {
     "unlink": "Odłącz produkt",

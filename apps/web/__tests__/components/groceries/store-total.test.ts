@@ -11,7 +11,15 @@ function grocery(
   amount: number | null = null,
   unit: string | null = null
 ): GroceryDto {
-  return { id: name, name, isDone, amount, unit, storeId: "store-a" } as unknown as GroceryDto;
+  return {
+    id: name,
+    name,
+    ingredientId: `i-${name}`,
+    isDone,
+    amount,
+    unit,
+    storeId: "store-a",
+  } as unknown as GroceryDto;
 }
 
 function product(
@@ -38,7 +46,9 @@ const PRICES: Record<string, StoreProductDto> = {
   bananen: product(1.99, "EUR", { quantity: 1, unit: "kilogram", byWeight: true }),
 };
 
-const priceFor = (_storeId: string | null, name: string | null) => PRICES[name ?? ""] ?? null;
+/** What the Store prices each Ingredient at; a grocery's Ingredient is `i-<its name>`. */
+const priceFor = (_storeId: string | null, ingredientId: string | null | undefined) =>
+  PRICES[(ingredientId ?? "").replace(/^i-/, "")] ?? null;
 
 function group(groceries: GroceryDto[]): GroceryGroup {
   return {
@@ -48,9 +58,8 @@ function group(groceries: GroceryDto[]): GroceryGroup {
     normalizedUnit: "",
     storeId: "store-a",
     aisleId: null,
-    totalAmount: null,
+    totalAmount: groceries.reduce((sum, item) => sum + (item.amount ?? 1), 0),
     displayUnit: null,
-    canAggregate: true,
     sources: groceries.map((item) => ({ grocery: item, recipeName: null })),
     allDone: groceries.every((item) => item.isDone),
     anyDone: groceries.some((item) => item.isDone),
@@ -120,7 +129,7 @@ describe("storeTotal", () => {
     };
     const total = storeTotal(
       [grocery("cola", false), grocery("tea", false)].map(lineOf),
-      (_storeId, name) => mixed[name ?? ""] ?? null,
+      (_storeId, ingredientId) => mixed[(ingredientId ?? "").replace(/^i-/, "")] ?? null,
       "store-a"
     );
 

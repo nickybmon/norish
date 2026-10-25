@@ -9,7 +9,10 @@
     "manageStores": "Administrer butikker",
     "storeViewOptions": "Butikkvisningsinnstillinger",
     "groupIngredients": "Grupper ingredienser",
-    "clearList": "Tøm listen"
+    "clearList": "Tøm listen",
+    "pantry": "Spiskammer",
+    "list": "Liste",
+    "views": "Handlelistevisninger"
   },
   "empty": {
     "title": "Handlelisten din venter",
@@ -86,6 +89,27 @@
     "dragAisle": "Dra for å endre rekkefølgen",
     "aisleDuplicate": "Denne butikken har allerede en gang med det navnet"
   },
+  "pantry": {
+    "hint": "Ingredienser du allerede har.",
+    "empty": "Ingenting i spiskammeret ennå",
+    "unavailable": "Spiskammeret kunne ikke leses. Ingenting er endret; prøv igjen når du er tilkoblet.",
+    "fieldLabel": "Finn eller legg til en matvare",
+    "fieldPlaceholder": "Finn eller legg til, f.eks. olivenolje",
+    "add": "Legg til i spiskammeret",
+    "fromCatalogue": "Legg til en matvare",
+    "addFood": "Legg {name} i spiskammeret",
+    "putOnTheList": "Legg til i handleliste",
+    "onTheList": "På listen",
+    "putOnTheListToast": "{name} står på listen",
+    "undo": "Angre",
+    "keepFailed": "{name} kunne ikke legges i spiskammeret",
+    "fromYourRecipes": "Fra oppskriftene dine",
+    "fromYourRecipesHint": "Mest brukte ingredienser",
+    "inRecipes": "{count, plural, one {i # oppskrift} other {i # oppskrifter}}",
+    "showMore": "Vis flere",
+    "inYourPantry": "I spiskammeret ditt",
+    "offlineDetails": "Detaljene for en matvare åpnes når du er tilkoblet igjen."
+  },
   "panel": {
     "addTitle": "Legg til handlevare",
     "editTitle": "Rediger handlevare",
@@ -116,6 +140,7 @@
     "editPlaceholder": "f.eks. melk hver uke",
     "servings": "Porsjoner",
     "selectedCount": "{selected} av {total} valgt",
+    "pantryUnavailable": "Spiskammeret kunne ikke leses, så ingenting er huket av ennå. Huk av det du må kjøpe.",
     "loadingIngredients": "Laster ingredienser...",
     "noIngredients": "Ingen ingredienser.",
     "addSelectedToGroceries": "Legg til i handleliste",
@@ -123,7 +148,11 @@
     "ingredientsFailed": "Kunne ikke legge til ingredienser i handlelisten.",
     "addToGroceries": "Legg til i handleliste",
     "aisle": "Gang",
-    "noAisle": "Ingen gang"
+    "noAisle": "Ingen gang",
+    "toBuy": "Skal kjøpes",
+    "inPantry": "I spiskammeret ditt",
+    "weKeepThis": "Har vi alltid",
+    "keepFailed": "Det kunne ikke legges i spiskammeret"
   },
   "picker": {
     "unlink": "Fjern kobling til produkt",

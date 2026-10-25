@@ -17,7 +17,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SiteAuthTokenDecryptedDto } from "@norish/shared/contracts/dto/site-auth-tokens";
-import { fetchRenderedPage } from "@norish/api/parser/fetch";
+import { fetchRenderedPage, renderPage } from "@norish/api/parser/fetch";
+import { SERVER_CONFIG } from "@norish/config/env-config-server";
 
 const { mockGetBrowser, mockNewContext, mockNewPage, mockGoto, mockContent, mockClose } =
   vi.hoisted(() => {
@@ -36,6 +37,23 @@ vi.mock("@norish/api/obscura", () => ({ getBrowser: mockGetBrowser }));
 vi.mock("@norish/shared-server/logger", () => ({
   parserLogger: { debug: vi.fn(), warn: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
+
+const mainFrame = { name: "main" };
+let responseListeners: ((response: unknown) => void)[] = [];
+
+/** A response as Playwright reports it: its status, the frame, and whether it is a navigation. */
+function fakeResponse(status: number, options: { frame?: object; navigation?: boolean } = {}) {
+  return {
+    status: () => status,
+    frame: () => options.frame ?? mainFrame,
+    request: () => ({ isNavigationRequest: () => options.navigation ?? true }),
+  };
+}
+
+/** Deliver a response to the page's `response` listeners, as the browser would. */
+function emitResponse(response: ReturnType<typeof fakeResponse>): void {
+  for (const listener of responseListeners) listener(response);
+}
 
 /** The options Norish passed to `browser.newContext()` for the nth fetch. */
 function contextOptions(call = 0): Record<string, unknown> {
@@ -65,7 +83,15 @@ beforeEach(() => {
   mockGoto.mockResolvedValue(undefined);
   mockContent.mockResolvedValue("<html>rendered</html>");
   mockClose.mockResolvedValue(undefined);
-  mockNewPage.mockResolvedValue({ goto: mockGoto, content: mockContent });
+  responseListeners = [];
+  mockNewPage.mockResolvedValue({
+    goto: mockGoto,
+    content: mockContent,
+    mainFrame: () => mainFrame,
+    on: (_event: string, listener: (response: unknown) => void) => {
+      responseListeners.push(listener);
+    },
+  });
   mockNewContext.mockImplementation(async () => ({
     addCookies: vi.fn(),
     newPage: mockNewPage,
@@ -97,7 +123,7 @@ describe("fetchRenderedPage – rendered-page contract", () => {
     const [url, options] = mockGoto.mock.calls[0] as [string, { timeout?: number }];
 
     expect(url).toBe("https://example.com/recipe");
-    expect(options.timeout).toBeGreaterThan(0);
+    expect(options.timeout).toBe(SERVER_CONFIG.OBSCURA_NAVIGATION_TIMEOUT_MS);
   });
 
   it("supplies no browser identity of its own", async () => {
@@ -167,5 +193,52 @@ describe("fetchRenderedPage – rendered-page contract", () => {
     await expect(fetchRenderedPage("https://example.com/recipe")).resolves.toBe(
       "<html>rendered</html>"
     );
+  });
+});
+
+describe("renderPage – the status a site answered with", () => {
+  it("reports the status the document arrived with", async () => {
+    mockGoto.mockResolvedValue(fakeResponse(403));
+
+    await expect(renderPage("https://example.com/recipe")).resolves.toEqual({
+      html: "<html>rendered</html>",
+      status: 403,
+    });
+  });
+
+  it("reports the real page's status when a bot check answers 403 first", async () => {
+    mockGoto.mockImplementation(async () => {
+      emitResponse(fakeResponse(403));
+      emitResponse(fakeResponse(200));
+
+      return fakeResponse(403);
+    });
+
+    await expect(renderPage("https://example.com/recipe")).resolves.toMatchObject({
+      status: 200,
+    });
+  });
+
+  it("ignores images, scripts and frames inside the page", async () => {
+    mockGoto.mockImplementation(async () => {
+      emitResponse(fakeResponse(403));
+      emitResponse(fakeResponse(200, { navigation: false }));
+      emitResponse(fakeResponse(200, { frame: { name: "ad" } }));
+
+      return fakeResponse(403);
+    });
+
+    await expect(renderPage("https://example.com/recipe")).resolves.toMatchObject({
+      status: 403,
+    });
+  });
+
+  it("reports no status when there was no answer at all", async () => {
+    mockGoto.mockRejectedValue(new Error("net::ERR_NAME_NOT_RESOLVED"));
+
+    await expect(renderPage("https://example.com/recipe")).resolves.toEqual({
+      html: "",
+      status: null,
+    });
   });
 });

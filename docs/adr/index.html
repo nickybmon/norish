@@ -726,10 +726,11 @@
             <b>Proposed.</b> The AI Runtime gains <code>generateImage</code> beside
             <code>generateStructured</code> and <code>transcribe</code>, reading its own provider
             block rather than the server's, because only four of eleven providers expose an image
-            model at all. One feature, two requests: a structured call writes a short English visual
-            brief, and the image model draws from it. Rejects a lone <code>imageModel</code> field
-            beside <code>visionModel</code>, an OpenAI-compatible endpoint as the only route, and
-            going straight from recipe to image model.
+            model at all (five since the AI SDK 7 line: Ollama joined, amendment of 2026-09-19). One
+            feature, two requests: a structured call writes a short English visual brief, and the
+            image model draws from it. Rejects a lone <code>imageModel</code> field beside
+            <code>visionModel</code>, an OpenAI-compatible endpoint as the only route, and going
+            straight from recipe to image model.
           </p>
         </li>
         <li>
@@ -816,12 +817,128 @@
             >ADR-0031 &mdash; An Aisle is a fact about a name at a Store, not about a list line</a
           >
           <p>
-            <b>Accepted.</b> Aisles are ordered headings owned by a Store, and an Aisle Link — a
-            Store, a normalized grocery name, an Aisle — is keyed by name like a Product Link, so a
-            grocery's aisle is derived and nothing is stored on the row. Filing one "melk" files
-            every "melk" at that store and the memory outlives the line; two lines with the identical
-            name can never sit in different aisles, by design. Groups are per aisle per store. Aisles
-            travel on the Store DTO and its subscription; filing is tRPC only.
+            <b>Accepted; amended by ADR-0037</b> (keyed by Ingredient, not by name). Aisles are
+            ordered headings owned by a Store, and an Aisle Link — a Store, a normalized grocery
+            name, an Aisle — is keyed by name like a Product Link, so a grocery's aisle is derived
+            and nothing is stored on the row. Filing one "melk" files every "melk" at that store and
+            the memory outlives the line; two lines with the identical name can never sit in
+            different aisles, by design. Groups are per aisle per store. Aisles travel on the Store
+            DTO and its subscription; filing is tRPC only.
+          </p>
+        </li>
+        <li>
+          <a href="realtime/0032-realtime-is-one-hub-one-catalogue-one-idiom.md"
+            >ADR-0032 &mdash; Realtime is one hub, one catalogue, one idiom</a
+          >
+          <p>
+            <b>Accepted.</b> The old realtime layer is deleted, not adapted. Every Realtime Event is
+            declared once, client-safely, with its Scope and zod schema; published through one
+            validated domain object that never throws to its caller; fanned out by one per-process
+            Realtime Hub with a single Redis subscriber and bounded queues; consumed through one
+            subscription factory that yields Envelopes. A subscriber that falls behind is Lagged and
+            refetches. Rejects migration behind shims, per-connection subscribers, pattern
+            subscriptions, publish-time booleans and raw publishing.
+          </p>
+        </li>
+        <li>
+          <a href="realtime/0033-a-scope-change-restarts-the-socket.md"
+            >ADR-0033 &mdash; A scope change restarts the socket</a
+          >
+          <p>
+            <b>Accepted.</b> A subscription's identity is fixed at start. Household and account
+            changes publish their announcing event, awaited, then an internal invalidation that
+            closes the user's sockets with 4000; everything restarts against the current identity
+            and a Cursor minted under the old one is refused. Rejects re-keying live subscriptions.
+          </p>
+        </li>
+        <li>
+          <a href="realtime/0034-resume-is-a-bounded-buffer-not-a-guarantee.md"
+            >ADR-0034 &mdash; Resume is a bounded buffer, not a guarantee</a
+          >
+          <p>
+            <b>Accepted.</b> Amends ADR-0011: every non-internal publish is appended to a
+            per-channel Redis Stream (about a thousand entries, a day) in the same script that
+            publishes it; subscriptions are tracked with an opaque identity-bound Cursor and resume
+            from it on reconnect, or end Lagged. Recovery remains the guarantee; the stream is a
+            delivery buffer, not a transactional outbox.
+          </p>
+        </li>
+        <li>
+          <a href="ai/0035-decisions-are-the-runtimes-fourth-entry-point.md"
+            >ADR-0035 &mdash; Decisions are the runtime's fourth entry point, on their own
+            provider</a
+          >
+          <p>
+            <b>Proposed.</b> The AI Runtime gains <code>decide</code> beside
+            <code>generateStructured</code>, <code>transcribe</code> and <code>generateImage</code>:
+            typed Choice, Score and Boolean questions in, a pick and a probability distribution
+            back, from a Decision Model (TypeSafe's Jev) configured in its own block with its own
+            key and no fallback to the AI configuration's. A Decision has no Prompt (the scoped
+            exception to ADR-0016): its criteria are the domain's own option set. Thresholds are
+            named constants in code; which uses run is one multi-select, all on by default. The
+            Decision Model is never required &mdash; every converted kind keeps its fallback. The AI
+            SDK line moved to 7 for it. Rejects a Jev member in the AI provider enum, a
+            <code>decisionModel</code> field beside <code>model</code>, a separate
+            <code>packages/decisions</code>, and thresholds as settings.
+          </p>
+        </li>
+        <li>
+          <a href="groceries/0036-a-pantry-ingredient-is-a-name-matched-exactly.md"
+            >ADR-0036 &mdash; A Pantry Ingredient is a name matched exactly, and nothing is stored
+            on the recipe or the grocery</a
+          >
+          <p>
+            <b>Superseded in part by ADR-0037</b> (the Pantry matches on Ingredient). A Pantry
+            Ingredient is a household fact &mdash; an Ingredient Name the household has at home,
+            owned like a Store and read across the household, with the fold on the Ingredient Name
+            rather than on the row &mdash; and an ingredient is in the pantry only on an exact match
+            of folded names, with the Product Link's folding and no looser rule. The pantry is
+            consulted once, when a recipe is added to the groceries: stocked lines are shown apart,
+            unticked, and left off the list unless ticked. Nothing is stored on the recipe
+            ingredient or the grocery row; the Pantry has its own router and subscription and no
+            REST endpoint.
+          </p>
+        </li>
+        <li>
+          <a href="groceries/0037-ingredient-identity-is-an-alias-pointing-at-an-ingredient.md"
+            >ADR-0037 &mdash; Ingredient identity is an alias pointing at an Ingredient</a
+          >
+          <p>
+            <b>Accepted; amended by ADR-0039</b> (rung 2 strips units-map phrases, a mint is
+            parented under the alias its text ends with). An Ingredient is one food known by many Ingredient Aliases; a recipe
+            line, a Grocery, a recurring grocery and a Pantry Ingredient keep their text as written
+            and point at the alias it resolved to, and Product Links, Aisle Links and store
+            preferences are keyed by Ingredient. One resolver in
+            <code>@norish/shared-server/ingredients</code> mints, in the order exact, stripped, AI,
+            new &mdash; a mint nothing sure vouched for is flagged. Merges move aliases. Supersedes
+            ADR-0036 and amends ADR-0031.
+          </p>
+        </li>
+        <li>
+          <a href="groceries/0038-the-catalogue-is-seeded-from-open-food-facts-under-odbl.md"
+            >ADR-0038 &mdash; The ingredient catalogue is seeded from Open Food Facts under the ODbL</a
+          >
+          <p>
+            <b>Accepted; amended by ADR-0039</b> (the seed keeps nutrition codes). The Open Food Facts ingredients taxonomy, every entry and language, is
+            fetched nightly and applied as ownerless Ingredients, seeded aliases and parents. A
+            refresh never undoes a person's alias, merge or parent; a failed or malformed fetch
+            leaves the last good seed. The first seed merges existing Ingredients it is sure of,
+            once. The ODbL is accepted: the Ingredients page credits the source and offers the
+            catalogue as JSON.
+          </p>
+        </li>
+        <li>
+          <a href="groceries/0039-ingredient-nutrition-comes-from-vendored-open-datasets-corrected-per-household.md"
+            >ADR-0039 &mdash; Ingredient Nutrition comes from vendored open datasets, corrected per household</a
+          >
+          <p>
+            <b>Accepted.</b> CIQUAL, CALNUT and USDA numbers, joined through the taxonomy's codes
+            plus a reviewed name match, are committed as a table a monthly workflow rebuilds. Own
+            codes come before a parent's; Norish keeps a fix list, density fixes (USDA's spoon
+            weight for a food whose numbers come from CIQUAL, and for a few groups that share a
+            form) and a list of parents that never lend their numbers. A correction belongs to a
+            household, and a recipe's worked-out nutrition is computed on read for the reader's
+            household.
           </p>
         </li>
       </ul>

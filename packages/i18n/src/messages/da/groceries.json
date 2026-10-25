@@ -9,7 +9,10 @@
     "manageStores": "Administrer butikker",
     "storeViewOptions": "Butikvisningsindstillinger",
     "groupIngredients": "Gruppér ingredienser",
-    "clearList": "Ryd listen"
+    "clearList": "Ryd listen",
+    "pantry": "Spisekammer",
+    "list": "Liste",
+    "views": "Indkøbsvisninger"
   },
   "empty": {
     "title": "Din indkøbsliste venter",
@@ -86,6 +89,27 @@
     "dragAisle": "Træk for at ændre rækkefølgen",
     "aisleDuplicate": "Denne butik har allerede en gang med det navn"
   },
+  "pantry": {
+    "hint": "Ingredienser, du allerede har.",
+    "empty": "Intet i dit spisekammer endnu",
+    "unavailable": "Spisekammeret kunne ikke læses. Intet er ændret; prøv igen, når du er online.",
+    "fieldLabel": "Find eller tilføj en madvare",
+    "fieldPlaceholder": "Find eller tilføj, f.eks. olivenolie",
+    "add": "Tilføj til spisekammer",
+    "fromCatalogue": "Tilføj en madvare",
+    "addFood": "Tilføj {name} til spisekammeret",
+    "putOnTheList": "Tilføj til indkøbsliste",
+    "onTheList": "På listen",
+    "putOnTheListToast": "{name} er på listen",
+    "undo": "Fortryd",
+    "keepFailed": "{name} kunne ikke tilføjes til spisekammeret",
+    "fromYourRecipes": "Fra dine opskrifter",
+    "fromYourRecipesHint": "Mest brugte ingredienser",
+    "inRecipes": "{count, plural, one {i # opskrift} other {i # opskrifter}}",
+    "showMore": "Vis flere",
+    "inYourPantry": "I dit spisekammer",
+    "offlineDetails": "En madvares detaljer åbner, når du er online igen."
+  },
   "panel": {
     "addTitle": "Tilføj indkøbsvare",
     "editTitle": "Rediger indkøbsvare",
@@ -116,6 +140,7 @@
     "editPlaceholder": "f.eks. mælk hver uge",
     "servings": "Portioner",
     "selectedCount": "{selected} af {total} valgt",
+    "pantryUnavailable": "Dit spisekammer kunne ikke læses, så intet er markeret endnu. Markér det, du skal købe.",
     "loadingIngredients": "Indlæser ingredienser...",
     "noIngredients": "Ingen ingredienser.",
     "addSelectedToGroceries": "Tilføj til indkøbsliste",
@@ -123,7 +148,11 @@
     "ingredientsFailed": "Kunne ikke tilføje ingredienser til indkøbslisten.",
     "addToGroceries": "Tilføj til indkøbsliste",
     "aisle": "Gang",
-    "noAisle": "Ingen gang"
+    "noAisle": "Ingen gang",
+    "toBuy": "Skal købes",
+    "inPantry": "I dit spisekammer",
+    "weKeepThis": "Har vi altid",
+    "keepFailed": "Det kunne ikke tilføjes til spisekammeret"
   },
   "picker": {
     "unlink": "Fjern kobling til produkt",

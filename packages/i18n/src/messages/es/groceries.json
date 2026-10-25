@@ -9,7 +9,10 @@
     "manageStores": "Gestionar tiendas",
     "storeViewOptions": "Opciones de vista de tienda",
     "groupIngredients": "Agrupar ingredientes",
-    "clearList": "Vaciar lista"
+    "clearList": "Vaciar lista",
+    "pantry": "Despensa",
+    "list": "Lista",
+    "views": "Vistas de la compra"
   },
   "empty": {
     "title": "Tu lista de la compra te espera",
@@ -86,6 +89,27 @@
     "dragAisle": "Arrastra para reordenar",
     "aisleDuplicate": "Esta tienda ya tiene un pasillo con ese nombre"
   },
+  "pantry": {
+    "hint": "Ingredientes que ya tienes.",
+    "empty": "Aún no hay nada en tu despensa",
+    "unavailable": "No se pudo leer tu despensa. No ha cambiado nada; inténtalo de nuevo cuando vuelvas a estar en línea.",
+    "fieldLabel": "Buscar o añadir un alimento",
+    "fieldPlaceholder": "Buscar o añadir, p. ej. aceite de oliva",
+    "add": "Añadir a la despensa",
+    "fromCatalogue": "Añadir un alimento",
+    "addFood": "Añadir {name} a la despensa",
+    "putOnTheList": "Añadir a la lista de la compra",
+    "onTheList": "En la lista",
+    "putOnTheListToast": "{name} está en la lista",
+    "undo": "Deshacer",
+    "keepFailed": "No se pudo añadir {name} a la despensa",
+    "fromYourRecipes": "De tus recetas",
+    "fromYourRecipesHint": "Ingredientes más usados",
+    "inRecipes": "{count, plural, one {en # receta} other {en # recetas}}",
+    "showMore": "Mostrar más",
+    "inYourPantry": "En tu despensa",
+    "offlineDetails": "Los detalles de un alimento se abren cuando vuelvas a estar en línea."
+  },
   "panel": {
     "addTitle": "Añadir producto",
     "editTitle": "Editar producto",
@@ -116,6 +140,7 @@
     "editPlaceholder": "p. ej., leche cada semana",
     "servings": "Raciones",
     "selectedCount": "{selected} de {total} seleccionados",
+    "pantryUnavailable": "No se pudo leer tu despensa, así que aún no hay nada marcado. Marca lo que necesites comprar.",
     "loadingIngredients": "Cargando ingredientes...",
     "noIngredients": "No hay ingredientes.",
     "addSelectedToGroceries": "Añadir a la lista de la compra",
@@ -123,7 +148,11 @@
     "ingredientsFailed": "No se han podido añadir los ingredientes a la lista de la compra.",
     "addToGroceries": "Añadir a la lista de la compra",
     "aisle": "Pasillo",
-    "noAisle": "Sin pasillo"
+    "noAisle": "Sin pasillo",
+    "toBuy": "Por comprar",
+    "inPantry": "En tu despensa",
+    "weKeepThis": "Siempre lo tenemos",
+    "keepFailed": "No se pudo añadir a la despensa"
   },
   "picker": {
     "unlink": "Desvincular producto",

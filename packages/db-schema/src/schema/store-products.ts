@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -9,8 +10,19 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { ingredients } from "./ingredients";
 import { versionColumn } from "./shared";
 import { stores } from "./stores";
+
+/**
+ * A Decision's ranking of the products a lookup offered for a grocery name.
+ * Declared here, beside the column that stores it, because the schema
+ * package sits below the contracts that re-export it.
+ */
+export interface ProductSuggestion {
+  /** The offered products' page URLs, most likely first, with the probability of each. */
+  ranked: { url: string; probability: number }[];
+}
 
 /**
  * A Store Product: something a Store sells, as Norish last read it. It belongs
@@ -66,9 +78,9 @@ export const storeProducts = pgTable(
 );
 
 /**
- * A Product Link: what a Store has learned a grocery name means. Keyed by name
- * rather than by Grocery on purpose, so it outlives the list line that
- * prompted it. A row with no product and a `triedAt` **is** a Miss: it holds
+ * A Product Link: what a Store has learned an Ingredient means there. Keyed by
+ * Ingredient rather than by Grocery or by name (ADR-0037), so it outlives the
+ * list line that prompted it and prices every spelling of the food. A row with no product and a `triedAt` **is** a Miss: it holds
  * when the name was last tried and carries no reason. A row with no product
  * and no `triedAt` is a Pending Link: the Store has been asked and has not
  * answered yet, which is a fact about the Store and so is kept here rather
@@ -81,12 +93,24 @@ export const storeProductLinks = pgTable(
     storeId: uuid("store_id")
       .notNull()
       .references(() => stores.id, { onDelete: "cascade" }),
-    normalizedName: text("normalized_name").notNull(),
+    ingredientId: uuid("ingredient_id").references(() => ingredients.id, { onDelete: "cascade" }),
+    /** The folded name the link was keyed by before ADR-0037; read by nothing. */
+    normalizedName: text("normalized_name"),
     storeProductId: uuid("store_product_id").references(() => storeProducts.id, {
       onDelete: "set null",
     }),
     /** When the shop last answered for this name; null while it is still being asked. */
     triedAt: timestamp("tried_at", { withTimezone: true }),
+    /**
+     * What the Decision Model said about the products the shop offered for
+     * this name, kept with the Miss it was not sure enough to turn into a
+     * link (ADR-0035): the offered products most likely first, each with its
+     * probability, and the one marked as the best guess where it cleared the
+     * bar. Read when the grocery panel offers the shop's answers, so opening
+     * the panel spends nothing. Null on a link, a Pending Link, or a Miss
+     * nothing was asked about.
+     */
+    suggestion: jsonb("suggestion").$type<ProductSuggestion>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     ...versionColumn,
@@ -94,6 +118,6 @@ export const storeProductLinks = pgTable(
   (t) => [
     index("idx_store_product_links_store_id").on(t.storeId),
     index("idx_store_product_links_product_id").on(t.storeProductId),
-    unique("uq_store_product_links_store_name").on(t.storeId, t.normalizedName),
+    unique("uq_store_product_links_store_ingredient").on(t.storeId, t.ingredientId),
   ]
 );

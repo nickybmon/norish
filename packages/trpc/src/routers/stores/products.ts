@@ -17,7 +17,13 @@ import {
 } from "@norish/db/repositories/store-products";
 import { getStoreById } from "@norish/db/repositories/stores";
 import { searchStore } from "@norish/queue/store-lookup/lookup";
+import {
+  findIngredientFor,
+  resolveIngredient,
+  writeResolved,
+} from "@norish/shared-server/ingredients/resolver";
 import { trpcLogger as log } from "@norish/shared-server/logger";
+import { stores } from "@norish/shared-server/realtime/stores";
 import {
   StoreProductChoiceSchema,
   StoreProductLinkLookupSchema,
@@ -26,11 +32,11 @@ import {
   StoreProductsListInputSchema,
   StoreShopSearchSchema,
 } from "@norish/shared/contracts/zod";
+import { orderBySuggestion } from "@norish/shared/lib/product-link";
 import { resolveSearchAddress } from "@norish/shared/lib/search-address";
 
 import { authedProcedure } from "../../middleware";
 import { router } from "../../trpc";
-import { storeEmitter } from "./emitter";
 import { priceTheList } from "./pricing";
 import { assertStoreAccess } from "./stores-helpers";
 
@@ -43,17 +49,19 @@ const listProducts = authedProcedure
   });
 
 /**
- * What one Store has learned one grocery name means. `groceryPrices` answers
- * only for the Store each grocery sits under, so a panel where the shopper has
- * selected another Store has nowhere else to read its link from. A single
- * indexed row: no shop is visited and no lookup is queued.
+ * What one Store has learned the Ingredient a grocery name resolves to means.
+ * `groceryPrices` answers only for the Store each grocery sits under, so a
+ * panel where the shopper has selected another Store has nowhere else to read
+ * its link from. A single indexed row: no shop is visited, no lookup is
+ * queued, and a name Norish does not know is answered with nothing.
  */
 const linkFor = authedProcedure
   .input(StoreProductLinkLookupSchema)
   .query(async ({ ctx, input }): Promise<ResolvedProductLink | null> => {
     await assertStoreAccess(ctx, input.storeId);
+    const ingredient = await findIngredientFor(input.name);
 
-    return resolveProductLink(input.storeId, input.name);
+    return ingredient ? resolveProductLink(input.storeId, ingredient.ingredientId) : null;
   });
 
 /**
@@ -71,7 +79,7 @@ const createProduct = authedProcedure
     const product = await createManualProduct(input);
 
     log.info({ userId: ctx.user.id, storeId: input.storeId }, "By-hand store product created");
-    storeEmitter.emitToHousehold(ctx.householdKey, "productUpdated", { product });
+    void stores.publish("productUpdated", { product }, { householdKey: ctx.householdKey });
 
     return product;
   });
@@ -94,7 +102,7 @@ const updateProduct = authedProcedure
         message: "Only a by-hand product can be edited",
       });
     }
-    storeEmitter.emitToHousehold(ctx.householdKey, "productUpdated", { product });
+    void stores.publish("productUpdated", { product }, { householdKey: ctx.householdKey });
 
     return product;
   });
@@ -116,13 +124,28 @@ const searchShop = authedProcedure
     // the queue at the same shop. Whether the shop answered at all travels
     // with the answer: a shop that is down has not said it stocks nothing.
     const { candidates, answered } = await searchStore(store.searchAddress, input.term);
+    // What the lookup's Decision said about these products, kept with the
+    // Miss for this name (ADR-0035): the offered list is ordered by it, most
+    // likely first. One indexed row, no request.
+    const ingredient = await findIngredientFor(input.term);
+    const link = ingredient
+      ? await resolveProductLink(input.storeId, ingredient.ingredientId)
+      : null;
+    const ranking = link?.product ? null : (link?.suggestion ?? null);
+    const offered = orderBySuggestion(candidates, ranking);
 
     log.info(
-      { userId: ctx.user.id, storeId: input.storeId, count: candidates.length, answered },
+      {
+        userId: ctx.user.id,
+        storeId: input.storeId,
+        count: candidates.length,
+        answered,
+        ranked: ranking !== null,
+      },
       "Searched a shop for the picker"
     );
 
-    return { candidates, answered };
+    return { candidates: offered, answered };
   });
 
 function hostOf(address: string | null | undefined): string | null {
@@ -246,14 +269,14 @@ const chooseProduct = authedProcedure
       });
 
       storeProductId = product.id;
-      storeEmitter.emitToHousehold(ctx.householdKey, "productUpdated", { product });
+      void stores.publish("productUpdated", { product }, { householdKey: ctx.householdKey });
     }
 
     if (input.choice.kind === "manual") {
       const product = await writeManualProduct(input.storeId, input.choice);
 
       storeProductId = product.id;
-      storeEmitter.emitToHousehold(ctx.householdKey, "productUpdated", { product });
+      void stores.publish("productUpdated", { product }, { householdKey: ctx.householdKey });
     }
 
     // A Pack Size the shopper set is the last word for whichever product the
@@ -261,13 +284,25 @@ const chooseProduct = authedProcedure
     if (storeProductId && input.pack !== undefined) {
       const product = await setPackSizeByHand(storeProductId, input.pack);
 
-      if (product) storeEmitter.emitToHousehold(ctx.householdKey, "productUpdated", { product });
+      if (product)
+        void stores.publish("productUpdated", { product }, { householdKey: ctx.householdKey });
     }
 
-    await upsertProductLink(input.storeId, input.name, storeProductId);
-    const link = await resolveProductLink(input.storeId, input.name);
+    // The choice is about the food the grocery names, so every spelling of it
+    // at this Store is priced by it (ADR-0037).
+    const ingredient = await writeResolved(
+      () => resolveIngredient(input.name, { userId: ctx.user.id }),
+      async (resolved) => {
+        if (resolved) await upsertProductLink(input.storeId, resolved.ingredientId, storeProductId);
 
-    if (link) storeEmitter.emitToHousehold(ctx.householdKey, "linkUpdated", { link });
+        return resolved;
+      }
+    );
+
+    if (!ingredient) return null;
+    const link = await resolveProductLink(input.storeId, ingredient.ingredientId);
+
+    if (link) void stores.publish("linkUpdated", { link }, { householdKey: ctx.householdKey });
 
     return link;
   });
